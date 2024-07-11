@@ -9,12 +9,12 @@ prop_treated <- 0.4
 het_brackets <- 5
 
 ##Convert init_EIR into an init_betaa
-mpl_initial <- sifter::model_param_list_create(init_EIR = init_EIR,
+mpl_initial <- mamasante::model_param_list_create(init_EIR = init_EIR,
                                init_ft = prop_treated,
                                comparison='u5'
 )
 
-pars_initial <- sifter::equilibrium_init_create_stripped(age_vector = init_age,
+pars_initial <- mamasante::equilibrium_init_create_stripped(age_vector = init_age,
                                          init_EIR = init_EIR,
                                          ft = prop_treated,
                                          model_param_list = mpl_initial,
@@ -33,25 +33,25 @@ betaa_times<-seq(0,2*365,by=30)
 log_betaa_vals <- genRandWalk(length(betaa_times)-1,volatility,log(init_betaa))
 
 betaa_vals <- exp(log_betaa_vals)
-##set up the simulation for the simualted data 
+##set up the simulation for the simualted data
 time<- 2*365
 out_step=1
 
-mpl <- sifter::model_param_list_create(init_EIR = init_EIR,
+mpl <- mamasante::model_param_list_create(init_EIR = init_EIR,
                                init_ft = prop_treated,
                                betaa_times=betaa_times,
                                betaa_vals=betaa_vals,
                                lag_rates = 10
                                )
 
-pars <- sifter::equilibrium_init_create_stripped(age_vector = init_age,
+pars <- mamasante::equilibrium_init_create_stripped(age_vector = init_age,
                                 init_EIR = init_EIR,
                                 ft = prop_treated,
                                 model_param_list = mpl,
                                 het_brackets = het_brackets)
 
-##The malaria model 
-generator <- odin(model_file)
+##The malaria model
+generator <- odin::odin(model_file)
 state_use <- pars[names(pars) %in% coef(generator)$name]
 
 # create model with initial values
@@ -72,7 +72,7 @@ out <- mod$transform_variables(mod_run)
 out_df <- data.frame(t=out$t,
                      prev=out$prev,
                      date=as.character(seq.Date(from = as.Date('2015-01-01'),by = 'day',length.out = length(tt))))
-months <- unique(as.yearmon(out_df$date))
+months <- unique(zoo::as.yearmon(out_df$date))
 midmonth_dates <- data.frame(date=as.character(as.Date(months,frac=0.5)))
 monthly_data <- left_join(midmonth_dates,out_df,by='date')
 
