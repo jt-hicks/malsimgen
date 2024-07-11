@@ -1,0 +1,27 @@
+---
+title: "Generating simulated data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{intro}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+devtools::install_github("jt-hicks/malsimgen")
+devtools::install_github("jt-hicks/mamasante")
+library(mamasante)
+library(malsimgen)
+sim_data <- malsimgen::data_gen(volatility=1,
+                                init_EIR=100,
+                                min_EIR=0.01,
+                                max_EIR=500,
+                                plot_instance=TRUE)
+```
