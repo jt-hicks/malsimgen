@@ -89,7 +89,6 @@ data_gen <- function(volatility,
   positive<-rbinom(length(out$prev_all),tested,out$prev_all)
   month <- seq.Date(from = as.Date('2015-01-01'),by = 'month',length.out = length(tt))
   data_raw<-data.frame(t=out$t+30,
-                       month=zoo::as.yearmon(month),
                        tested=tested,
                        positive=positive,
                        prev_true=out$prev_all,

@@ -13,15 +13,29 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
-
+Install and load required packages:
 ```{r setup}
 devtools::install_github("jt-hicks/malsimgen")
 devtools::install_github("jt-hicks/mamasante")
 library(mamasante)
 library(malsimgen)
+```
+
+Run basic, single example:
+```{r setup}
 sim_data <- malsimgen::data_gen(volatility=1,
                                 init_EIR=100,
                                 min_EIR=0.01,
                                 max_EIR=500,
                                 plot_instance=TRUE)
+```
+
+Generate dataframe of multiple instances:
+```{r setup}
+sims_compendium_train<-generate_sim_compendium(n_sims=10,
+                                               volatility=0.8,
+                                               init_EIR=100,
+                                               duration=20*365,
+                                               out_step=30,
+                                               plot_instance=FALSE)
 ```
