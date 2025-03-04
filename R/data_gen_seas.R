@@ -1,81 +1,89 @@
-gen_seasonal_sim <- function(init_EIR=100,
-                             max_param=125,
-                             model_file= "shared/odin_model_stripped_seasonal.R",
-                             country = 'Burkina Faso',
-                             admin_unit = 'Cascades',
-                             sim_length = 2){
+#------------------------------------------------
+#' Function that returns values from optional seasonal deterministic model
+#'
+#' \code{data_gen_seas} Generate simulated data based on a random walk of EIR values
+#'
+#' @param init_EIR Initial EIR value to kick of the random walk
+#' @param out_step The number of days between each simulated data point.
+#' @param sample_size Average sample size for number of tested individuals in the simulated data set.
+#' @param sample_sd Standard deviation of the normal distribution of
+#'                   sample size for the number of tested individuals in the simulated data set.
+#' @param duration The length of time in days the model will run.
+#' @param prop_treated Proportion of the cases that are treated
+#' @param init_age Age groups within the model
+#' @param country Country to be used for seasonal profile
+#' @param admin_unit Admin unit to be used for seasonal profile
+#' @param plot_instance If TRUE, plots the simulated prevalence.
+#'
+#' @export
+data_gen_seas <- function(init_EIR=100,
+                          out_step=30,
+                          sample_size=220,
+                          sample_sd=40,
+                          duration = 10*365,
+                          init_age = c(0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3.5, 5, 7.5, 10, 15, 20, 30, 40, 50, 60, 70, 80),
+                          prop_treated = 0.4,
+                          country = 'Burkina Faso',
+                          admin_unit = 'Cascades',
+                          plot_instance = TRUE){
   #Provide age categories, proportion treated, and number of heterogeneity brackets
   #Create model parameter list. Also loads seasonality profile data file to match to desired admin_unit and country
+  model_file <- system.file("odin", "odin_model_stripped_seasonal.R", package = "mamasante")
   cat('Country = ',country,' Admin = ',admin_unit,' init_EIR = ',init_EIR,'\n')
-  init_age <- c(0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3.5, 5, 7.5, 10, 15, 20, 30, 40, 50, 60, 70, 80)
-  
-  prop_treated <- 0.4
+  rA_preg <- 0.00512821
+  rU_preg <- 0.00906627
   het_brackets <- 5
-  
-  ##set up the simulation for the simualted data 
-  time<- 10*365
-  out_step=1
-  
-  mpl <- sifter::model_param_list_create(init_EIR = init_EIR,
+  comparison <- 'u5'
+
+  ##set up the simulation for the simualted data
+
+  mpl <- mamasante::model_param_list_create(init_EIR = init_EIR,
                                          init_ft = prop_treated,
                                          country=country,
                                          admin_unit = admin_unit,
                                          lag_rates = 10,
-                                         max_param = max_param,
-                                         volatility = 1,
+                                         # volatility = 1,
+                                         comparison=comparison,
                                          state_check = 0
   )
-  
-  pars <- sifter::equilibrium_init_create_stripped(age_vector = init_age,
+
+  pars <- mamasante::equilibrium_init_create_stripped(age_vector = init_age,
                                                    init_EIR = init_EIR,
                                                    ft = prop_treated,
                                                    model_param_list = mpl,
                                                    het_brackets = het_brackets)
-  
-  ##The malaria model 
-  generator <- odin(model_file)
+
+  ##The malaria model
+  generator <- odin::odin(model_file)
   state_use <- pars[names(pars) %in% coef(generator)$name]
-  
+
   # create model with initial values
   mod <- generator(user = state_use, use_dde = TRUE)
-  tt <- seq(0, time, out_step)
-  
+  tt <- seq(0, duration, out_step)
+
   # run the simulation to base the data
   mod_run <- mod$run(tt, step_max_n = 1e7,
                      atol = 1e-5,
                      rtol = 1e-5)
-  
+
   # shape output
   out <- mod$transform_variables(mod_run)
-  
+
   # plot data and generate data
-  # plot(out$t,out$betaa_out,type='l',col="red",ylim=c(0,125))
-  # lines(out$t,out$prev*100,col="blue",lwd=4)
-  out_df <- data.frame(t=out$t,
-                       prev=out$prev,
-                       date=as.character(seq.Date(from = as.Date('2015-01-01'),by = 'day',length.out = length(tt))))
-  months <- unique(as.yearmon(out_df$date))
-  midmonth_dates <- data.frame(date=as.character(as.Date(months,frac=0.5)))
-  monthly_data <- left_join(midmonth_dates,out_df,by='date')
-  ##Use only last 2 years for simulated data
-  sim_months <- sim_length*12-1
-  monthly_data <- monthly_data[(nrow(monthly_data)-sim_months):nrow(monthly_data),]
-  
-  monthly_data$tested<-round(rnorm(nrow(monthly_data),500,50))
-  monthly_data$positive<-rbinom(nrow(monthly_data),monthly_data$tested,monthly_data$prev)
-  monthly_data$month <- zoo::as.yearmon(monthly_data$date)
-  if(any(monthly_data$positive>monthly_data$tested)) {stop('Number of positive is greater than number tested')}
-  
-  true_data <- data.frame(t=out$t,
-                          date=seq.Date(from = as.Date('2015-01-01'),by = 'day',length.out = length(tt)),
-                          prev05_true=out$prev,
-                          EIR_true=out$EIR_out,
-                          betaa_true=out$betaa_out,
-                          inc05_true=out$inc05,
-                          inc_all_true = out$inc,
-                          prev_all_true = out$prev_all)
-  
-  return(list(init_EIR = init_EIR,
-              true_data=true_data,
-              data_raw=monthly_data))
+  if(plot_instance){
+    plot(out$t,out$prev,col="white")
+    lines(out$t,out$prev,col="blue",lwd=4)
+  }
+
+  tested<-round(rnorm(length(out$prev_all),sample_size,sample_sd))
+  positive<-rbinom(length(out$prev_all),tested,out$prev_all)
+  month <- seq.Date(from = as.Date('2015-01-01'),by = 'month',length.out = length(tt))
+  data_raw<-data.frame(t=out$t+30,
+                       tested=tested,
+                       positive=positive,
+                       prev_true=out$prev_all,
+                       EIR_true=out$EIR_out,
+                       inc_true=out$inc05)
+  data_raw$init_EIR <- init_EIR
+  return(data_raw)
 }

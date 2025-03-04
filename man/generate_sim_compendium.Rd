@@ -6,29 +6,29 @@
 \usage{
 generate_sim_compendium(
   n_sims,
-  volatility,
-  init_EIR,
-  duration,
-  out_step,
-  plot_instance = FALSE
+  gen_function = data_gen,
+  plot_instance = FALSE,
+  ...
 )
 }
 \arguments{
 \item{n_sims}{Number of simulated datasets to be created}
 
+\item{gen_function}{Function used to generate data}
+
+\item{plot_instance}{If TRUE, plots the simulated prevalence.}
+
 \item{volatility}{Volatility of the random walk}
 
 \item{init_EIR}{Initial EIR value to kick of the random walk}
 
-\item{duration}{The length of time in days the model will run.}
-
-\item{out_step}{The number of days between each simulated data point.}
-
-\item{plot_instance}{If TRUE, plots the simulated prevalence.}
-
 \item{min_EIR}{Minimum value over which the random walk will not exceed.}
 
 \item{max_EIR}{Maximum value over which the random walk will not exceed.}
+
+\item{out_step}{The number of days between each simulated data point.}
+
+\item{duration}{The length of time in days the model will run.}
 }
 \description{
 \code{generate_sim_compendium} Generate multiple simulation iterations

@@ -1,14 +1,10 @@
 #------------------------------------------------
-#' Function that returns values from optional seasonal deterministic model
+#' Function that returns values from deterministic model based on user-specified series of EIR values
 #'
-#' \code{data_gen} Generate simulated data based on a random walk of EIR values
+#' \code{data_gen_piecewise} Generate simulated data based on a user-specified time series of EIR values
 #'
-#' @param volatility Volatility of the random walk
-#' @param init_EIR Initial EIR value to kick of the random walk
-#' @param min_EIR Minimum value over which the random walk will not exceed.
-#' @param max_EIR Maximum value over which the random walk will not exceed.
-#' @param EIR_step This controls the frequency with which EIR changes in the model.
-#'                  This is the length of time (in days) for each EIR period.
+#' @param EIR_vals Initial EIR value to kick of the random walk
+#' @param EIR_times Minimum value over which the random walk will not exceed.
 #' @param sample_size Average sample size for number of tested individuals in the simulated data set.
 #' @param sample_sd Standard deviation of the normal distribution of
 #'                   sample size for the number of tested individuals in the simulated data set.
@@ -19,48 +15,40 @@
 #' @param plot_instance If TRUE, plots the simulated prevalence.
 #'
 #' @export
-data_gen <- function(volatility,
-                     init_EIR=100,
-                     min_EIR = 0.01,
-                     max_EIR=500,
-                     EIR_step = 30,
-                     sample_size=220,
-                     sample_sd=40,
-                     out_step=30,
-                     duration= 5*365,
-                     prop_treated = 0.4,
-                     init_age = c(0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3.5, 5, 7.5, 10, 15, 20, 30, 40, 50, 60, 70, 80),
-                     plot_instance = TRUE){
+data_gen_piecewise <- function(EIR_vals,
+                               EIR_times,
+                               sample_size=220,
+                               sample_sd=40,
+                               out_step=30,
+                               duration= 5*365,
+                               prop_treated = 0.4,
+                               init_age = c(0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3.5, 5, 7.5, 10, 15, 20, 30, 40, 50, 60, 70, 80),
+                               plot_instance = TRUE){
   model_file <- system.file("odin", "odin_model_stripped_matched.R", package = "mamasante")
-  cat('EIR_vol = ',volatility,' init_EIR = ',init_EIR,'\n')
 
   rA_preg <- 0.00512821
   rU_preg <- 0.00906627
   het_brackets <- 5
   comparison <- 'u5'
+  init_EIR <- EIR_vals[1]
 
-  ################## generate the data ######################
-  # generate random walk of EIR (recursive fn)
-  EIR_times<-seq(0,duration,by=EIR_step)
+  if(length(EIR_vals)!=length(EIR_times)){
+    errorCondition('Length of EIR_vals and EIR_times must match.')
 
-  ### just a random walk on logscale
-  EIR_vals=genrandwalk(length(EIR_times)-1,volatility,init_EIR,min_EIR,max_EIR)
-
-  ##set up the simulation for the simualted data
-
+  }
   mpl <- mamasante::model_param_list_create(init_EIR = init_EIR,
-                                 init_ft = prop_treated,
-                                 EIR_times=EIR_times,
-                                 EIR_vals=EIR_vals,
-                                 comparison=comparison,
-                                 lag_rates=10
+                                            init_ft = prop_treated,
+                                            EIR_times=EIR_times,
+                                            EIR_vals=EIR_vals,
+                                            comparison=comparison,
+                                            lag_rates=10
   )
 
   pars <- mamasante::equilibrium_init_create_stripped(age_vector = init_age,
-                                           init_EIR = init_EIR,
-                                           ft = prop_treated,
-                                           model_param_list = mpl,
-                                           het_brackets = het_brackets)
+                                                      init_EIR = init_EIR,
+                                                      ft = prop_treated,
+                                                      model_param_list = mpl,
+                                                      het_brackets = het_brackets)
 
   ##The malaria model but only on human side (i.e. no mosquitoes to worry about)
   generator <- odin::odin(model_file)
@@ -92,8 +80,7 @@ data_gen <- function(volatility,
                        tested=tested,
                        positive=positive,
                        prev_true=out$prev_all,
-                       EIR_true=EIR_vals,
-                       vol_true=volatility,
+                       EIR_true=out$EIR_out,
                        inc_true=out$incunder5)
   return(data_raw)
 }

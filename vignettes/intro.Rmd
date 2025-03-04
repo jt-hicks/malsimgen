@@ -39,3 +39,33 @@ sims_compendium_train<-generate_sim_compendium(n_sims=10,
                                                out_step=30,
                                                plot_instance=FALSE)
 ```
+
+Run basic, single example with seasonal model:
+```{r}
+sim_data_seasonal <- malsimgen::data_gen_seas(init_EIR=100,
+                                country = 'Burkina Faso',
+                                admin_unit = 'Cascades',
+                                duration=20*365,
+                                out_step=30,
+                                plot_instance=TRUE)
+```
+
+Run basic, single example with a user-specified series of EIR values:
+```{r}
+EIR_vals <- c(10,30,40,500,200,100,50,10)
+EIR_times <- c(0,180,360,540,720,900,1080,1260)
+sim_data_piecewise <- malsimgen::data_gen_piecewise(EIR_vals=EIR_vals,
+                                          EIR_times=EIR_times,
+                                          duration = 4*365,
+                                          plot_instance=TRUE)
+```
+
+Generate dataframe of multiple instances, using seasonal pattern:
+```{r}
+sims_compendium_train<-generate_sim_compendium(n_sims=10,
+                                               volatility=0.8,
+                                               init_EIR=100,
+                                               duration=20*365,
+                                               out_step=30,
+                                               plot_instance=FALSE)
+```

@@ -10,10 +10,11 @@
 #' @param max_EIR Maximum value over which the random walk will not exceed.
 #' @param out_step The number of days between each simulated data point.
 #' @param duration The length of time in days the model will run.
+#' @param gen_function Function used to generate data
 #' @param plot_instance If TRUE, plots the simulated prevalence.
 #'
 #' @export
-generate_sim_compendium<-function(n_sims,volatility,init_EIR,duration,out_step,plot_instance=FALSE){
+generate_sim_compendium<-function(n_sims,gen_function=data_gen,plot_instance=FALSE,...){
   sims_compendium<-data.frame(
     run=numeric(),
     t=numeric(),
@@ -28,7 +29,7 @@ generate_sim_compendium<-function(n_sims,volatility,init_EIR,duration,out_step,p
     sims_compendium<-dplyr::add_row(sims_compendium,
       cbind(
         data.frame(run=i),
-        data_gen(volatility = volatility, init_EIR = init_EIR,time = duration,out_step = out_step,plot_instance = plot_instance)
+        gen_function(...)
       )
     )
   }
